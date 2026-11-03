@@ -91,36 +91,17 @@ class WifiDirectManager(
             val wfdInfoClass = Class.forName("android.net.wifi.p2p.WifiP2pWfdInfo")
             val wfdInfo = wfdInfoClass.newInstance()
 
-            // setWfdEnabled(true)
-            val setWfdEnabledMethod = wfdInfoClass.getMethod("setWfdEnabled", Boolean::class.java)
-            setWfdEnabledMethod.invoke(wfdInfo, true)
+            wfdInfoClass.methods.firstOrNull { it.name == "setWfdEnabled" }?.invoke(wfdInfo, true)
+            wfdInfoClass.methods.firstOrNull { it.name == "setDeviceType" }?.invoke(wfdInfo, 1)  // 1 = PRIMARY_SINK
+            wfdInfoClass.methods.firstOrNull { it.name == "setSessionAvailable" }?.invoke(wfdInfo, true)
+            wfdInfoClass.methods.firstOrNull { it.name == "setControlPort" }?.invoke(wfdInfo, 7236)
+            wfdInfoClass.methods.firstOrNull { it.name == "setMaxThroughput" }?.invoke(wfdInfo, 50)
 
-            // setDeviceType(WFD_SOURCE = 0)  // 实际上我们是 SINK，但先尝试设置
-            // 注意：PRIMARY_SINK = 1, SECONDARY_SINK = 2, SOURCE = 0
-            val setDeviceTypeMethod = wfdInfoClass.getMethod("setDeviceType", Int::class.java)
-            setDeviceTypeMethod.invoke(wfdInfo, 1)  // 1 = PRIMARY_SINK
+            val setWFDInfoMethod = WifiP2pManager::class.java.methods.firstOrNull {
+                it.name == "setWFDInfo" && it.parameterTypes.size == 3
+            }
 
-            // setSessionAvailable(true)
-            val setSessionAvailableMethod = wfdInfoClass.getMethod("setSessionAvailable", Boolean::class.java)
-            setSessionAvailableMethod.invoke(wfdInfo, true)
-
-            // setControlPort(7236)  // RTSP 端口
-            val setControlPortMethod = wfdInfoClass.getMethod("setControlPort", Int::class.java)
-            setControlPortMethod.invoke(wfdInfo, 7236)
-
-            // setMaxThroughput(50)  // 50 Mbps
-            val setMaxThroughputMethod = wfdInfoClass.getMethod("setMaxThroughput", Int::class.java)
-            setMaxThroughputMethod.invoke(wfdInfo, 50)
-
-            // 调用 WifiP2pManager.setWFDInfo()
-            val setWFDInfoMethod = WifiP2pManager::class.java.getMethod(
-                "setWFDInfo",
-                WifiP2pManager.Channel::class.java,
-                wfdInfoClass,
-                WifiP2pManager.ActionListener::class.java
-            )
-
-            setWFDInfoMethod.invoke(manager, ch, wfdInfo, object : WifiP2pManager.ActionListener {
+            setWFDInfoMethod?.invoke(manager, ch, wfdInfo, object : WifiP2pManager.ActionListener {
                 override fun onSuccess() {
                     Timber.i("✅ WFD Info set successfully! Windows should be able to discover this device now.")
                 }

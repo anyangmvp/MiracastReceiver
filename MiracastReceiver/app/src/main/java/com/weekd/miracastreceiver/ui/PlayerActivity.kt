@@ -68,6 +68,7 @@ class PlayerActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_MEDIA_URI = "media_uri"
+        const val EXTRA_IS_IMAGE = "is_image"
         const val EXTRA_MEDIA_TITLE = "media_title"
         const val EXTRA_MEDIA_URIS = "media_uris"
         const val EXTRA_MEDIA_TITLES = "media_titles"
@@ -140,6 +141,7 @@ class PlayerActivity : AppCompatActivity() {
     private var trackSelector: DefaultTrackSelector? = null
     private var mediaUri: String? = null
     private var mediaTitle: String? = null
+    private var isExplicitImageMedia = false
     private var playlist: List<String> = emptyList()
     private var playlistTitles: List<String> = emptyList()
     private var currentIndex: Int = 0
@@ -213,8 +215,13 @@ class PlayerActivity : AppCompatActivity() {
                 ACTION_PLAY -> if (isCurrentImage()) startImageSlideShow() else player?.play()
                 ACTION_PAUSE -> if (isCurrentImage()) stopImageSlideShow() else player?.pause()
                 ACTION_STOP -> {
-                    stopPlayback()
-                    exitPlayer()
+                    val src = intent?.getStringExtra("source")
+                    if (src == "miracast" && !isMiracastSession) {
+                        Timber.d("Ignoring miracast ACTION_STOP in non-miracast session")
+                    } else {
+                        stopPlayback()
+                        exitPlayer()
+                    }
                 }
                 ACTION_SEEK -> {
                     val position = intent.getLongExtra(EXTRA_SEEK_POSITION, 0L)
@@ -583,6 +590,7 @@ class PlayerActivity : AppCompatActivity() {
         castToken = nextCastToken
         castIdleReason = null
         castStoppedBySender = false
+        isExplicitImageMedia = intent?.getBooleanExtra(EXTRA_IS_IMAGE, false) ?: false
         // 每次新的投屏请求都从 0° 开始
         rotationDegrees = 0
         manualRotationDegrees = 0
@@ -633,7 +641,7 @@ class PlayerActivity : AppCompatActivity() {
         mediaTitle = playlistTitles.getOrNull(currentIndex) ?: getString(R.string.title_dlna_indexed, currentIndex + 1, playlist.size)
         tvTitle.text = mediaTitle
         val uri = mediaUri ?: return
-        if (castToken == null && isImageUri(uri)) {
+        if (castToken == null && (isExplicitImageMedia || isImageUri(uri))) {
             showImage(uri)
         } else {
             playMedia(uri)
@@ -870,27 +878,46 @@ class PlayerActivity : AppCompatActivity() {
         isAirPlayMirrorSession = false
         screenOnSessionActive = true
         player?.pause()
-        playerView.visibility = View.GONE
-        imageView.visibility = View.VISIBLE
         updateScreenOn()
         tvError.visibility = View.GONE
-        tvStatus.text = getString(R.string.status_showing_image)
-        updateBufferingState(true)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
-        applyRotation()
         showRotateButton(focus = false)
+
+        val isSmooth = com.weekd.miracastreceiver.util.AppSettings.isSmoothImageTransition(this)
+        val hasCurrentImage = imageView.visibility == View.VISIBLE && imageView.drawable != null
+
+        // 仅在首次没有图片且非平滑模式时才立即显示转圈 loading
+        if (!isSmooth || !hasCurrentImage) {
+            playerView.visibility = View.GONE
+            mirrorSurfaceView.visibility = View.GONE
+            imageView.visibility = View.VISIBLE
+            tvStatus.text = getString(R.string.status_showing_image)
+            updateBufferingState(true)
+            applyRotation()
+        }
 
         lifecycleScope.launch {
             try {
                 val bitmap = withContext(Dispatchers.IO) {
-                    if (uri.startsWith("http://") || uri.startsWith("https://")) {
-                        URL(uri).openStream().use { BitmapFactory.decodeStream(it) }
+                    val bytes = if (uri.startsWith("http://") || uri.startsWith("https://")) {
+                        val conn = URL(uri).openConnection()
+                        conn.connectTimeout = 10000
+                        conn.readTimeout = 15000
+                        conn.getInputStream().use { it.readBytes() }
                     } else {
-                        contentResolver.openInputStream(Uri.parse(uri))?.use { BitmapFactory.decodeStream(it) }
+                        contentResolver.openInputStream(Uri.parse(uri))?.use { it.readBytes() }
+                    }
+                    if (bytes != null && bytes.isNotEmpty()) {
+                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    } else {
+                        null
                     }
                 }
                 updateBufferingState(false)
                 if (bitmap != null) {
+                    playerView.visibility = View.GONE
+                    mirrorSurfaceView.visibility = View.GONE
+                    imageView.visibility = View.VISIBLE
                     imageView.setImageBitmap(bitmap)
                     adaptOrientationToImage(bitmap.width, bitmap.height)
                     imageView.post { applyRotation() }
@@ -944,9 +971,15 @@ class PlayerActivity : AppCompatActivity() {
     private fun isCurrentImage(): Boolean = mediaUri?.let { isImageUri(it) } == true
 
     private fun isImageUri(uri: String): Boolean {
+        if (isExplicitImageMedia) return true
         val clean = uri.substringBefore('?').lowercase()
+        val full = uri.lowercase()
         return clean.endsWith(".jpg") || clean.endsWith(".jpeg") || clean.endsWith(".png") ||
             clean.endsWith(".gif") || clean.endsWith(".webp") || clean.endsWith(".bmp") ||
+            clean.endsWith(".heic") || clean.endsWith(".heif") ||
+            full.contains("/image") || full.contains("/photo") || full.contains("type=image") ||
+            full.contains("m=image") || full.contains("mediatype=image") || full.contains("/dms/image") ||
+            full.contains("gallery") ||
             clean.startsWith("content://") && clean.contains("image")
     }
 

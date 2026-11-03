@@ -34,8 +34,10 @@ class WfdServer(
 
     @Volatile
     private var isRunning = false
+    private val sessionLock = java.util.concurrent.atomic.AtomicBoolean(false)
     @Volatile private var reconnectAfterMs = 0L
 
+    private var serverSocket: java.net.ServerSocket? = null
     private var sessionHandler: WfdSessionHandler? = null
     private var rtpReceiver: RtpReceiver? = null
 
@@ -59,6 +61,23 @@ class WfdServer(
         isRunning = true
         Timber.i("WFD session starter running (will dial source:$port, RTP on $rtpPort)")
 
+        // 1. 服务端监听 7236 端口（适配安卓手机如小米/华为等，手机作为客户端主动连接电视 RTSP 端口）
+        scope.launch {
+            try {
+                val ss = java.net.ServerSocket(port).apply { reuseAddress = true }
+                serverSocket = ss
+                Timber.i("WFD RTSP ServerSocket listening on port $port")
+                while (isRunning && !ss.isClosed) {
+                    val socket = ss.accept()
+                    Timber.i("WFD: accepted incoming connection from ${socket.inetAddress.hostAddress}")
+                    runSession(socket)
+                }
+            } catch (e: Exception) {
+                if (isRunning) Timber.d(e, "WFD ServerSocket accept loop terminated")
+            }
+        }
+
+        // 2. 客户端并发探测 P2P 网段（适配 Windows 无线显示器，Windows 端开放 7236 端口等待连接）
         scope.launch {
             while (isRunning) {
                 try {
@@ -131,8 +150,12 @@ class WfdServer(
 
     /** 在已连接的 socket 上跑完整个会话；结束后返回，外层循环继续等待下一次投屏。 */
     private fun runSession(socket: Socket) {
+        if (!sessionLock.compareAndSet(false, true)) {
+            runCatching { socket.close() }
+            return
+        }
         val sourceIp = socket.inetAddress.hostAddress ?: "unknown"
-        onConnectionRequested?.invoke("Windows PC", sourceIp)
+        onConnectionRequested?.invoke("Miracast Source", sourceIp)
 
         // RTP 接收必须先起来：M3 会把端口告诉 Source，M7 之后随时可能来包。
         // 送显目标复用镜像专用 SurfaceView（与 AirPlay 镜像同一块），
@@ -156,11 +179,14 @@ class WfdServer(
             receiver.stop()
             rtpReceiver = null
             sessionHandler = null
+            sessionLock.set(false)
         }
     }
 
     fun stop() {
         isRunning = false
+        runCatching { serverSocket?.close() }
+        serverSocket = null
         sessionHandler?.close()
         sessionHandler = null
         rtpReceiver?.stop()

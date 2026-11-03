@@ -1,265 +1,530 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  横屏版式（电视 / 平板）。
-  原版把标题、设置、说明竖着堆成一条，平放后左右两侧各留一大片空白，
-  1080p 电视上还会显得字号偏小、信息全挤在屏幕中间一条。
-  这里改成左右两栏：左边回答"我是谁、现在什么状态"，右边回答"能改什么、怎么连"。
-
-  只在 sw600dp 的横屏生效 —— 手机横屏屏幕高度只有 360dp 左右，塞不进 40sp 的设备名，
-  继续用竖屏版式更好。所有控件 id 与原版一致，代码里的 findViewById 不需要改。
-  四周留安全边距，避免部分电视过扫描把边缘文字切掉。
--->
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_dark"
-    android:fillViewport="true"
-    android:scrollbars="none"
+    android:background="#070B14"
     tools:context=".ui.MainActivity">
 
+    <!-- 1. 梦幻电影感壁纸底图（右侧电视与手机连线原画，左侧暗色留白） -->
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/bg_main_artwork" />
+
+    <!-- 2. 全局半透明深蓝暗色渐变层，提升文字对比度 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#1A070B14" />
+
+    <!-- 3. 主操作界面层（Padding 避开电视过扫描） -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:baselineAligned="false"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingLeft="64dp"
-        android:paddingTop="40dp"
-        android:paddingRight="56dp"
-        android:paddingBottom="40dp">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingLeft="48dp"
+        android:paddingTop="32dp"
+        android:paddingRight="48dp"
+        android:paddingBottom="36dp">
 
-        <!-- ============ 左栏：设备身份与接收状态 ============ -->
+        <!-- 顶部信息栏：左侧 App 图标与副标，右侧真实 Wi-Fi 与真实时间 -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <!-- 左侧：图标与标题 -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_centerVertical="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:src="@drawable/ic_brand_cast" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="14dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tv_app_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="@string/app_name"
+                        android:textColor="#FFFFFF"
+                        android:textSize="20sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="@string/app_subtitle"
+                        android:textColor="#88A0C0"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- 右侧：真实 Wi-Fi 状态图标 | 真实系统 TextClock 时间 -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/iv_top_wifi"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_top_wifi" />
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="14dp"
+                    android:layout_marginLeft="14dp"
+                    android:layout_marginRight="14dp"
+                    android:background="#33FFFFFF" />
+
+                <TextClock
+                    android:id="@+id/tv_clock"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:format12Hour="HH:mm"
+                    android:format24Hour="HH:mm"
+                    android:textColor="#D0E0F0"
+                    android:textSize="16sp" />
+            </LinearLayout>
+        </RelativeLayout>
+
+        <!-- 中部区域：左侧 Hero 标语、设备大名称与状态胶囊 -->
         <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1.15"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
             android:orientation="vertical">
 
+            <!-- 主标语与副标 -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif-medium"
-                android:letterSpacing="0.04"
-                android:text="@string/app_name"
-                android:textColor="@color/text_secondary"
-                android:textSize="24sp" />
+                android:letterSpacing="0.02"
+                android:text="@string/hero_title"
+                android:textColor="#FFFFFF"
+                android:textSize="40sp"
+                android:textStyle="bold" />
 
-            <View
-                android:layout_width="72dp"
-                android:layout_height="4dp"
-                android:layout_marginTop="14dp"
-                android:background="@color/accent" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/hero_subtitle"
+                android:textColor="#88A0C0"
+                android:textSize="15sp" />
 
-            <!-- 设备名：电视上最主要的一行，40sp 在 1080p 下约合 80px 高，
-                 沙发距离可读；名称特别长时最多两行，不裁切 -->
+            <!-- 当前电视设备名称：字号放大醒目展示，比等待连接字号大，极具质感 -->
             <TextView
                 android:id="@+id/tv_device_name"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="26dp"
+                android:layout_marginTop="18dp"
                 android:ellipsize="end"
                 android:fontFamily="sans-serif-medium"
                 android:letterSpacing="0.01"
-                android:maxLines="2"
-                android:textColor="@color/text_primary"
-                android:textSize="40sp"
-                tools:text="SONY XR-55A80J" />
+                android:maxLines="1"
+                android:textColor="#5BB8FF"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                tools:text="Toshiba_TV" />
 
-            <TextView
-                android:id="@+id/tv_device_ip"
-                android:layout_width="match_parent"
+            <!-- 状态胶囊：四字状态 + 优雅分隔线 + IP 地址 Badge -->
+            <LinearLayout
+                android:id="@+id/layout_status_capsule"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:maxLines="1"
-                android:textColor="@color/text_secondary"
-                android:textSize="18sp"
-                tools:text="设备 IP: 192.168.1.100" />
-
-            <!-- 状态行：转圈 + 文案，左对齐比居中更像状态指示 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="36dp"
+                android:background="@drawable/bg_status_pill"
                 android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:paddingLeft="18dp"
+                android:paddingTop="8dp"
+                android:paddingRight="20dp"
+                android:paddingBottom="8dp">
 
-                <ProgressBar
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:indeterminate="true"
-                    android:indeterminateTint="@color/accent" />
+                <View
+                    android:id="@+id/dot_status"
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/dot_status_ready" />
 
                 <TextView
                     android:id="@+id/tv_status"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="14dp"
-                    android:layout_weight="1"
-                    android:text="@string/waiting_connection"
-                    android:textColor="@color/text_primary"
-                    android:textSize="22sp" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- 两栏之间的分隔线，让左右关系更明确 -->
-        <View
-            android:layout_width="1dp"
-            android:layout_height="320dp"
-            android:layout_marginLeft="40dp"
-            android:layout_marginRight="40dp"
-            android:background="@color/background_card" />
-
-        <!-- ============ 右栏：设置与连接说明 ============ -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <!-- 设置：开机自启 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:addStatesFromChildren="true"
-                android:background="@drawable/bg_setting_item"
-                android:orientation="vertical"
-                android:paddingLeft="22dp"
-                android:paddingTop="18dp"
-                android:paddingRight="22dp"
-                android:paddingBottom="18dp">
-
-                <androidx.appcompat.widget.SwitchCompat
-                    android:id="@+id/switch_auto_start"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:focusable="true"
-                    android:focusableInTouchMode="false"
-                    android:text="@string/auto_start_on_boot"
-                    android:textColor="@color/text_primary"
-                    android:textSize="20sp" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:lineSpacingExtra="4dp"
-                    android:text="@string/auto_start_on_boot_hint"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp" />
-            </LinearLayout>
-
-            <!-- 设置：投屏结束后去哪 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:addStatesFromChildren="true"
-                android:background="@drawable/bg_setting_item"
-                android:orientation="vertical"
-                android:paddingLeft="22dp"
-                android:paddingTop="18dp"
-                android:paddingRight="22dp"
-                android:paddingBottom="18dp">
-
-                <androidx.appcompat.widget.SwitchCompat
-                    android:id="@+id/switch_return_to_app"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:focusable="true"
-                    android:focusableInTouchMode="false"
-                    android:text="@string/return_to_app_after_cast"
-                    android:textColor="@color/text_primary"
-                    android:textSize="20sp" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:lineSpacingExtra="4dp"
-                    android:text="@string/return_to_app_after_cast_hint"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp" />
-            </LinearLayout>
-
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/switch_auto_rotate"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:background="@drawable/bg_setting_item"
-                android:padding="18dp"
-                android:focusable="true"
-                android:focusableInTouchMode="false"
-                android:text="@string/auto_rotate_to_fit"
-                android:textColor="@color/text_primary"
-                android:textSize="20sp" />
-
-            <!-- 设置：界面语言 -->
-            <LinearLayout
-                android:id="@+id/setting_language"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:background="@drawable/bg_setting_item"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingLeft="22dp"
-                android:paddingTop="20dp"
-                android:paddingRight="22dp"
-                android:paddingBottom="20dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/language"
-                    android:textColor="@color/text_primary"
-                    android:textSize="20sp" />
-
-                <TextView
-                    android:id="@+id/tv_language_value"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/accent"
-                    android:textSize="20sp"
-                    tools:text="English" />
-            </LinearLayout>
-
-            <!-- 连接说明：标题前加一条与左侧呼应的短竖线 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="34dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <View
-                    android:layout_width="3dp"
-                    android:layout_height="18dp"
-                    android:background="@color/accent" />
-
-                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="10dp"
-                    android:text="@string/how_to_connect"
-                    android:textColor="@color/text_primary"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
+                    android:fontFamily="sans-serif-medium"
+                    android:text="@string/status_ready_four_char"
+                    android:textColor="#E0F0FF"
+                    android:textSize="15sp" />
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="14dp"
+                    android:layout_marginLeft="14dp"
+                    android:layout_marginRight="14dp"
+                    android:background="#2EFFFFFF" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="IP: "
+                    android:textColor="#5A7D9A"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/tv_device_ip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:textColor="#8BB8E8"
+                    android:textSize="14sp"
+                    tools:text="192.168.0.98" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 底部区域：6 张现代化半透明毛玻璃功能卡片（支持 D-pad 遥控器横向导航） -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="136dp"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
+
+            <!-- 卡片 1: 改名字 -->
+            <LinearLayout
+                android:id="@+id/setting_device_name"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@drawable/bg_dashboard_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@drawable/ic_card_edit" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="@string/card_rename_title"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/tv_setting_device_name_val"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="#88A0C0"
+                    android:textSize="12sp"
+                    tools:text="当前: Toshiba_TV" />
             </LinearLayout>
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:lineSpacingExtra="8dp"
-                android:text="@string/connect_instruction"
-                android:textColor="@color/text_secondary"
-                android:textSize="15sp" />
+            <!-- 卡片 2: 开机启动 -->
+            <LinearLayout
+                android:id="@+id/card_auto_start"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="14dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_dashboard_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@drawable/ic_card_rocket" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="@string/card_auto_start_title"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tv_auto_start_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/state_enabled"
+                        android:textColor="#88A0C0"
+                        android:textSize="12sp" />
+
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/switch_auto_start"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="4dp"
+                        android:clickable="false"
+                        android:focusable="false" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- 卡片 3: 平滑播放 -->
+            <LinearLayout
+                android:id="@+id/card_smooth_transition"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="14dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_dashboard_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@drawable/ic_card_play" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="@string/card_smooth_transition_title"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tv_smooth_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/state_enabled"
+                        android:textColor="#88A0C0"
+                        android:textSize="12sp" />
+
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/switch_smooth_image_transition"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="4dp"
+                        android:clickable="false"
+                        android:focusable="false" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- 卡片 4: 自动旋转屏幕适配 -->
+            <LinearLayout
+                android:id="@+id/card_auto_rotate"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="14dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_dashboard_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@drawable/ic_card_rotate" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="@string/card_auto_rotate_title"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tv_auto_rotate_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/state_disabled"
+                        android:textColor="#88A0C0"
+                        android:textSize="12sp" />
+
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/switch_auto_rotate"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="4dp"
+                        android:clickable="false"
+                        android:focusable="false" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- 卡片 5: 语言切换 (点击直接在中英文之间来回切换) -->
+            <LinearLayout
+                android:id="@+id/setting_language"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="14dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_dashboard_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@drawable/ic_card_translate" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="@string/card_language_title"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tv_language_value"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/current_language_label"
+                        android:textColor="#88A0C0"
+                        android:textSize="12sp" />
+
+                    <ImageView
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:layout_marginLeft="4dp"
+                        android:alpha="0.6"
+                        android:src="@drawable/ic_chevron_right" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- 卡片 6: 退出应用 -->
+            <LinearLayout
+                android:id="@+id/card_exit_app"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="14dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_dashboard_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@drawable/ic_card_exit" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="@string/card_exit_title"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/action_return_home"
+                        android:textColor="#88A0C0"
+                        android:textSize="12sp" />
+
+                    <ImageView
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:layout_marginLeft="4dp"
+                        android:alpha="0.6"
+                        android:src="@drawable/ic_chevron_right" />
+                </LinearLayout>
+            </LinearLayout>
+
         </LinearLayout>
+
     </LinearLayout>
 
-</ScrollView>
+    <!-- 兼容隐藏旧版保留控件以防 Kotlin 寻找为空 -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone">
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switch_return_to_app"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+</FrameLayout>

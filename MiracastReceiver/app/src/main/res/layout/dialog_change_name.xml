@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="540dp"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_tv_dialog"
+    android:orientation="vertical"
+    android:padding="28dp">
+
+    <TextView
+        android:id="@+id/tv_dialog_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:text="@string/change_name_dialog_title"
+        android:textColor="#FFFFFF"
+        android:textSize="22sp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="@string/change_name_dialog_desc"
+        android:textColor="#88A0C0"
+        android:textSize="14sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginTop="20dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <EditText
+            android:id="@+id/et_device_name"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/bg_dialog_input"
+            android:focusable="true"
+            android:hint="@string/change_name_dialog_hint"
+            android:imeOptions="actionDone"
+            android:inputType="text"
+            android:maxLines="1"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#557090"
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/btn_random_name"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginLeft="10dp"
+            android:background="@drawable/bg_dialog_btn"
+            android:focusable="true"
+            android:paddingLeft="14dp"
+            android:paddingRight="14dp"
+            android:text="@string/random_name"
+            android:textColor="#5BB8FF"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:gravity="right"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btn_reset"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_dialog_btn"
+            android:focusable="true"
+            android:paddingLeft="18dp"
+            android:paddingRight="18dp"
+            android:text="@string/device_name_reset_to_default"
+            android:textColor="#A0B0C8"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/btn_cancel"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:layout_marginLeft="12dp"
+            android:background="@drawable/bg_dialog_btn"
+            android:focusable="true"
+            android:paddingLeft="18dp"
+            android:paddingRight="18dp"
+            android:text="@string/cancel"
+            android:textColor="#A0B0C8"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/btn_confirm"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:layout_marginLeft="12dp"
+            android:background="@drawable/bg_dialog_btn_primary"
+            android:focusable="true"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
+            android:text="@string/save"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+</LinearLayout>

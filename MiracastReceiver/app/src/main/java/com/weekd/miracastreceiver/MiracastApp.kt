@@ -12,10 +12,8 @@ class MiracastApp : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        // 初始化 Timber 日志库
-        if (BuildConfig.DEBUG) {
-            Timber.plant(Timber.DebugTree())
-        }
+        // 始终开启 Timber 日志输出到 logcat，便于排查投屏问题
+        Timber.plant(Timber.DebugTree())
 
         // 要在任何 Activity / 服务创建前恢复界面语言
         AppLanguage.restore(this)

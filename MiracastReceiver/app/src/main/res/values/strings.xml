@@ -1,19 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 默认语言（英文）。其他语言见 values-zh、values-zh-rTW 等目录，新增条目时要同步补齐。 -->
 <resources>
-    <string name="auto_rotate_to_fit">Auto-rotate to fit screen</string>
+    <!-- Global & Header -->
     <string name="app_name" translatable="false">Miracast Receiver</string>
+    <string name="app_subtitle">Receive screen cast from phones and computers</string>
+    <string name="hero_title">Big Screen · Better View</string>
+    <string name="hero_subtitle">Effortless casting, enjoy movies and creativity</string>
 
-    <!-- 首页 -->
+    <!-- Status -->
+    <string name="status_ready_four_char">Ready</string>
+    <string name="status_starting_four_char">Starting</string>
+    <string name="status_no_network_four_char">Offline</string>
+    <string name="status_no_wifi_four_char">No Wi-Fi</string>
+
+    <!-- Cards -->
+    <string name="card_rename_title">Rename</string>
+    <string name="card_current_name_prefix">Current: %s</string>
+    <string name="card_auto_start_title">Auto Start</string>
+    <string name="card_smooth_transition_title">Smooth Play</string>
+    <string name="card_auto_rotate_title">Auto Rotate</string>
+    <string name="card_language_title">Language</string>
+    <string name="card_exit_title">Exit App</string>
+
+    <string name="state_enabled">On</string>
+    <string name="state_disabled">Off</string>
+    <string name="action_return_home">Return to Home</string>
+    <string name="current_language_label">English</string>
+
+    <!-- Dialogs -->
+    <string name="change_name_dialog_title">Change Device Name</string>
+    <string name="change_name_dialog_desc">Change the receiver name displayed on sender devices</string>
+    <string name="change_name_dialog_hint">Enter new device name</string>
+    <string name="random_name">Random</string>
+    <string name="device_name_reset_to_default">Reset Default</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="toast_device_name_changed">Device name changed to: %s</string>
+    <string name="toast_device_name_reset">Reset to default device name</string>
+
+    <string name="auto_rotate_to_fit">Auto-rotate to fit screen</string>
     <string name="waiting_connection">Waiting for a cast connection…</string>
     <string name="device_ip">Device IP: %s</string>
     <string name="device_ip_fetching">Detecting…</string>
     <string name="how_to_connect">How to connect</string>
-    <string name="connect_instruction">1. Make sure the sending device and the TV are on the same local network\n2. Open the casting app on the sender\n3. Scan for and select this device\n4. Start casting</string>
+    <string name="connect_instruction">1. Make sure sender and TV are on the same Wi-Fi\n2. Open cast on phone/PC\n3. Select this device</string>
     <string name="auto_start_on_boot">Start receiver on boot</string>
-    <string name="auto_start_on_boot_hint">Runs in the background after the TV turns on, without opening this app. Some TVs also require allowing auto-start for this app in system settings.</string>
+    <string name="auto_start_on_boot_hint">Runs in the background after TV turns on.</string>
     <string name="return_to_app_after_cast">Return to this app after casting</string>
-    <string name="return_to_app_after_cast_hint">Stops on this settings page instead of going back to the TV home screen when you stop casting. Useful when you want to change settings right after a session.</string>
+    <string name="return_to_app_after_cast_hint">Stops on this settings page instead of going to TV home.</string>
     <string name="language">Language</string>
     <string name="language_follow_system">Follow system</string>
     <string name="status_no_network">No network connection</string>
@@ -21,20 +54,17 @@
     <string name="status_service_starting">Starting service…</string>
     <string name="status_permission_denied">Location permission not granted. Windows wireless casting is unavailable.</string>
 
-    <!-- 悬浮窗权限 -->
     <string name="overlay_permission_title">\"Display over other apps\" permission required</string>
-    <string name="overlay_permission_message">When this app is not open (for example after auto-start on boot, or after returning to the home screen), the system blocks the cast screen from appearing, so casting seems to do nothing.\n\nPlease enable this permission for the app on the next settings page.</string>
+    <string name="overlay_permission_message">Please enable this permission for the app on the settings page.</string>
     <string name="overlay_permission_open">Open settings</string>
     <string name="overlay_permission_later">Later</string>
-    <string name="overlay_settings_missing">This device has no such settings page. Run via adb: appops set %s SYSTEM_ALERT_WINDOW allow</string>
+    <string name="overlay_settings_missing">Run via adb: appops set %s SYSTEM_ALERT_WINDOW allow</string>
 
-    <!-- 连接确认 -->
     <string name="connect_request">Cast request</string>
     <string name="allow">Allow</string>
     <string name="deny">Deny</string>
     <string name="remember_device">Remember this device</string>
 
-    <!-- 播放页面 -->
     <string name="connected">Connected</string>
     <string name="playing">Playing</string>
     <string name="status_paused">Paused</string>
@@ -59,7 +89,6 @@
     <string name="error_image_decode">Unable to decode image</string>
     <string name="status_slideshow_paused">Slideshow paused</string>
 
-    <!-- 「更多」菜单 -->
     <string name="more">More</string>
     <string name="menu_stream_info">Video info</string>
     <string name="menu_stream_info_hide">Hide video info</string>
@@ -75,7 +104,6 @@
     <string name="quality_original">Original</string>
     <string name="speed_title">Playback speed</string>
 
-    <!-- 视频信息面板 -->
     <string name="info_title">Video info</string>
     <string name="info_source_resolution">Source resolution</string>
     <string name="info_display_resolution">Display resolution</string>
@@ -84,7 +112,6 @@
     <string name="info_bitrate">Bitrate</string>
     <string name="info_network_speed">Network speed</string>
 
-    <!-- 控制条无障碍描述 -->
     <string name="cd_cast_image">Cast image</string>
     <string name="cd_rotate_screen">Rotate screen</string>
     <string name="cd_previous">Previous</string>
@@ -93,9 +120,12 @@
     <string name="cd_fast_forward">Fast forward</string>
     <string name="cd_next">Next</string>
 
-    <!-- 前台服务通知 -->
     <string name="notification_channel_name">Cast receiver service</string>
     <string name="notification_channel_description">Keeps the cast receiver service running</string>
     <string name="notification_waiting">Waiting for AirPlay / DLNA / Miracast connections</string>
     <string name="notification_stop_cast">Stop casting</string>
+    <string name="device_name_with_hint">%1$s</string>
+    <string name="setting_change_name">Device Name</string>
+    <string name="smooth_image_transition">Smooth image transition</string>
+    <string name="smooth_image_transition_hint">Keep current image on screen while loading the next.</string>
 </resources>

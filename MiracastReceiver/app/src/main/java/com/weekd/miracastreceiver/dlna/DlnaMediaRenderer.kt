@@ -51,6 +51,37 @@ class DlnaMediaRenderer {
         onSetUri?.invoke(state.uri, metadata)
     }
 
+    fun isImageMedia(uri: String, metadata: String): Boolean {
+        // 1. 检查 DIDL-Lite metadata 中的 upnp:class 和 mime 声明（针对小米等动态 URL 无后缀的相册投屏）
+        if (metadata.contains("imageItem", ignoreCase = true) ||
+            metadata.contains("image/jpeg", ignoreCase = true) ||
+            metadata.contains("image/jpg", ignoreCase = true) ||
+            metadata.contains("image/png", ignoreCase = true) ||
+            metadata.contains("image/webp", ignoreCase = true) ||
+            metadata.contains("image/gif", ignoreCase = true) ||
+            metadata.contains("image/bmp", ignoreCase = true) ||
+            metadata.contains(":image:", ignoreCase = true) ||
+            metadata.contains("object.item.imageItem", ignoreCase = true)) {
+            return true
+        }
+
+        // 2. 检查常见图片文件后缀
+        val clean = uri.substringBefore('?').lowercase()
+        if (clean.endsWith(".jpg") || clean.endsWith(".jpeg") || clean.endsWith(".png") ||
+            clean.endsWith(".gif") || clean.endsWith(".webp") || clean.endsWith(".bmp") ||
+            clean.endsWith(".heic") || clean.endsWith(".heif")) {
+            return true
+        }
+
+        // 3. 检查小米相册等特定路径特征
+        if (clean.contains("/photo/") || clean.contains("/image/") ||
+            clean.contains("/dms/image") || clean.contains("/gallery/")) {
+            return true
+        }
+
+        return false
+    }
+
     fun play() {
         if (state.uri.isNotBlank()) {
             state.transportState = TransportState.PLAYING
@@ -108,10 +139,12 @@ class DlnaMediaRenderer {
 
     fun getState(): MediaState = state.copy()
 
-    fun updatePosition(position: Long, duration: Long) {
-        state.position = position
-        state.duration = duration
+    fun setPosition(positionMs: Long, durationMs: Long) {
+        state.position = positionMs
+        state.duration = durationMs
     }
+
+    fun updatePosition(positionMs: Long, durationMs: Long) = setPosition(positionMs, durationMs)
 
     fun setPlaying() {
         state.transportState = TransportState.PLAYING
@@ -175,10 +208,31 @@ class DlnaMediaRenderer {
 object SoapParser {
     fun extractAction(soapAction: String?): String {
         if (soapAction.isNullOrBlank()) return ""
-        return soapAction
-            .trim('"')
-            .substringAfterLast('#')
-            .trim()
+        val cleaned = soapAction.trim().trim('"').trim()
+        val action = if (cleaned.contains('#')) {
+            cleaned.substringAfterLast('#').trim()
+        } else if (cleaned.contains(':') && !cleaned.startsWith("http", ignoreCase = true)) {
+            cleaned.substringAfterLast(':').trim()
+        } else {
+            cleaned
+        }
+        return action
+    }
+
+    fun extractActionFromBody(body: String): String {
+        if (body.isBlank()) return ""
+        val pattern = Pattern.compile("<(?:[a-zA-Z0-9_]+:)?([A-Za-z0-9_]+)(?:\\s+[^>]*)?>", Pattern.DOTALL)
+        val bodyIndex = body.indexOf(":Body", ignoreCase = true).takeIf { it >= 0 }
+            ?: body.indexOf("<Body", ignoreCase = true)
+        val searchArea = if (bodyIndex >= 0) body.substring(bodyIndex) else body
+        val matcher = pattern.matcher(searchArea)
+        while (matcher.find()) {
+            val tag = matcher.group(1) ?: ""
+            if (!tag.equals("Body", ignoreCase = true) && !tag.equals("Envelope", ignoreCase = true)) {
+                return tag
+            }
+        }
+        return ""
     }
 
     fun extractTagValue(xml: String, tagName: String): String {

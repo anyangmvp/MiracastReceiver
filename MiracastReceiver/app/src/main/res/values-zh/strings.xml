@@ -1,35 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="auto_rotate_to_fit">自动旋转适配屏幕</string>
-    <!-- 首页 -->
+    <!-- 全局与通配 -->
+    <string name="app_name" translatable="false">Miracast Receiver</string>
+    <string name="app_subtitle">接收来自手机、电脑的投屏内容</string>
+    <string name="hero_title">大屏 · 更精彩</string>
+    <string name="hero_subtitle">轻松接收投屏，畅享影音与创意</string>
+
+    <!-- 状态 -->
+    <string name="status_ready_four_char">等待投屏</string>
+    <string name="status_starting_four_char">正在就绪</string>
+    <string name="status_no_network_four_char">网络断开</string>
+    <string name="status_no_wifi_four_char">未连无线</string>
+
+    <!-- 卡片标题与文案 -->
+    <string name="card_rename_title">改名字</string>
+    <string name="card_current_name_prefix">当前: %s</string>
+    <string name="card_auto_start_title">开机启动</string>
+    <string name="card_smooth_transition_title">平滑播放</string>
+    <string name="card_auto_rotate_title">自动旋转</string>
+    <string name="card_language_title">切换语言</string>
+    <string name="card_exit_title">退出应用</string>
+
+    <string name="state_enabled">已开启</string>
+    <string name="state_disabled">已关闭</string>
+    <string name="action_return_home">返回主界面</string>
+    <string name="current_language_label">简体中文</string>
+
+    <!-- 弹窗 -->
+    <string name="change_name_dialog_title">修改设备名称</string>
+    <string name="change_name_dialog_desc">修改在手机、电脑投屏列表中显示的设备名称</string>
+    <string name="change_name_dialog_hint">输入新的设备名称</string>
+    <string name="random_name">随机名称</string>
+    <string name="device_name_reset_to_default">恢复默认</string>
+    <string name="cancel">取消</string>
+    <string name="save">保存</string>
+    <string name="toast_device_name_changed">设备名称已修改为: %s</string>
+    <string name="toast_device_name_reset">已恢复为默认设备名称</string>
+
+    <!-- 播放与后台保留字段 -->
     <string name="waiting_connection">等待投屏连接...</string>
     <string name="device_ip">设备 IP: %s</string>
     <string name="device_ip_fetching">获取中...</string>
     <string name="how_to_connect">如何连接</string>
     <string name="connect_instruction">1. 确保发送设备与电视在同一局域网\n2. 打开发送端应用\n3. 扫描并选择此设备\n4. 开始投屏</string>
     <string name="auto_start_on_boot">开机自动启动接收服务</string>
-    <string name="auto_start_on_boot_hint">电视开机后在后台自动运行，无需手动打开本应用。部分电视需要在系统设置里允许本应用自启动。</string>
+    <string name="auto_start_on_boot_hint">电视开机后在后台自动运行，无需手动打开本应用。</string>
     <string name="return_to_app_after_cast">投屏结束后回到本应用</string>
-    <string name="return_to_app_after_cast_hint">停止投屏后停在设置页，而不是回到电视桌面。适合投完屏就要接着调设置的情况。</string>
+    <string name="return_to_app_after_cast_hint">停止投屏后停在设置页，而不是回到电视桌面。</string>
     <string name="language">语言</string>
     <string name="language_follow_system">跟随系统</string>
     <string name="status_no_network">网络未连接</string>
     <string name="status_no_wifi">未连接到 Wi-Fi</string>
     <string name="status_service_starting">服务启动中...</string>
     <string name="status_permission_denied">未授予定位权限，Windows 无线投屏不可用</string>
-
-    <!-- 悬浮窗权限 -->
-    <string name="overlay_permission_title">需要「显示在其他应用上层」权限</string>
-    <string name="overlay_permission_message">未打开本应用时（例如开机自启后、或退回桌面后），系统会阻止投屏画面自动弹出，表现为投屏没有反应。\n\n请在接下来的设置页中为本应用开启此权限。</string>
-    <string name="overlay_permission_open">去设置</string>
-    <string name="overlay_permission_later">稍后</string>
-    <string name="overlay_settings_missing">此设备没有该设置页，请用 adb 执行：appops set %s SYSTEM_ALERT_WINDOW allow</string>
-
-    <!-- 连接确认 -->
-    <string name="connect_request">投屏连接请求</string>
-    <string name="allow">允许</string>
-    <string name="deny">拒绝</string>
-    <string name="remember_device">记住此设备</string>
 
     <!-- 播放页面 -->
     <string name="connected">已连接</string>
@@ -56,7 +79,6 @@
     <string name="error_image_decode">无法加载图片</string>
     <string name="status_slideshow_paused">图片轮播已暂停</string>
 
-    <!-- 「更多」菜单 -->
     <string name="more">更多</string>
     <string name="menu_stream_info">视频信息</string>
     <string name="menu_stream_info_hide">关闭视频信息</string>
@@ -72,7 +94,6 @@
     <string name="quality_original">原画</string>
     <string name="speed_title">播放速度</string>
 
-    <!-- 视频信息面板 -->
     <string name="info_title">视频信息</string>
     <string name="info_source_resolution">源分辨率</string>
     <string name="info_display_resolution">显示分辨率</string>
@@ -81,7 +102,6 @@
     <string name="info_bitrate">码率</string>
     <string name="info_network_speed">网速</string>
 
-    <!-- 控制条无障碍描述 -->
     <string name="cd_cast_image">投屏图片</string>
     <string name="cd_rotate_screen">旋转画面</string>
     <string name="cd_previous">上一个</string>
@@ -90,9 +110,11 @@
     <string name="cd_fast_forward">前进</string>
     <string name="cd_next">下一个</string>
 
-    <!-- 前台服务通知 -->
     <string name="notification_channel_name">投屏接收服务</string>
     <string name="notification_channel_description">保持投屏接收服务运行</string>
     <string name="notification_waiting">正在等待 AirPlay/DLNA/Miracast 投屏连接</string>
     <string name="notification_stop_cast">停止投屏</string>
+    <string name="setting_change_name">设备名称</string>
+    <string name="smooth_image_transition">图片平滑切换</string>
+    <string name="smooth_image_transition_hint">加载新图片时保持当前画面，避免短暂黑屏与加载等待</string>
 </resources>

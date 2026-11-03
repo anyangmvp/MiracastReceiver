@@ -14,18 +14,25 @@ class DeviceInfoProvider(private val context: Context) {
     /**
      * 对外显示的设备名，AirPlay / DLNA / Miracast 共用。
      *
-     * 优先取系统设置里的设备名称（Settings.Global `device_name`，即电视「设置 → 关于 → 设备名称」），
-     * 用户在电视上改名后各种投屏方式都跟着变；取不到时退回「厂商 型号」。
-     * 常量 Settings.Global.DEVICE_NAME 是 API 25 才加的，minSdk 21 所以直接用键名。
+     * 1. 优先取用户在应用内自定义设置的名字
+     * 2. 其次取系统设置里的设备名称（Settings.Global `device_name`，即电视「设置 → 关于 → 设备名称」）
+     * 3. 取不到时退回「厂商 型号」
      */
     fun getDeviceName(): String {
+        val prefs = context.getSharedPreferences("miracast_settings", Context.MODE_PRIVATE)
+        val customName = prefs.getString("custom_device_name", null)
+        if (!customName.isNullOrBlank()) {
+            return customName.trim()
+        }
+
         val systemName = try {
             Settings.Global.getString(context.contentResolver, "device_name")
         } catch (e: Exception) {
             null
         }
-        return systemName?.trim()?.takeIf { it.isNotEmpty() }
+        val base = systemName?.trim()?.takeIf { it.isNotEmpty() }
             ?: "${Build.MANUFACTURER} ${Build.MODEL}".trim().ifEmpty { "Android TV" }
+        return base
     }
 
     fun getDeviceId(): String {

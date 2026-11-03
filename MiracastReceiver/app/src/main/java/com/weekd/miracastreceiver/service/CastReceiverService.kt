@@ -235,6 +235,7 @@ class CastReceiverService : Service() {
                 // 否则手机会一直停在最后一帧画面上
                 sendBroadcast(Intent(com.weekd.miracastreceiver.ui.PlayerActivity.ACTION_STOP).apply {
                     setPackage(packageName)
+                    putExtra("source", "miracast")
                 })
             }
         }
@@ -260,6 +261,7 @@ class CastReceiverService : Service() {
         // 设置回调
         dlnaRenderer.onSetUri = { uri, metadata ->
             Timber.i("DLNA SetURI: $uri")
+            val isImage = dlnaRenderer.isImageMedia(uri, metadata)
             val state = dlnaRenderer.getState()
             // 启动 PlayerActivity 并播放
             val intent = Intent(this, com.weekd.miracastreceiver.ui.PlayerActivity::class.java).apply {
@@ -272,6 +274,7 @@ class CastReceiverService : Service() {
                 } else {
                     putExtra(com.weekd.miracastreceiver.ui.PlayerActivity.EXTRA_MEDIA_URI, uri)
                 }
+                putExtra(com.weekd.miracastreceiver.ui.PlayerActivity.EXTRA_IS_IMAGE, isImage)
                 putExtra(com.weekd.miracastreceiver.ui.PlayerActivity.EXTRA_MEDIA_TITLE, extractTitle(metadata))
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
             }

@@ -79,7 +79,9 @@ class WfdSessionHandler(
             Timber.e(e, "Error in WFD session")
         } finally {
             Timber.i("WFD session ended")
-            onStreamStop?.invoke()
+            if (sessionId.isNotEmpty()) {
+                onStreamStop?.invoke()
+            }
             close()
         }
     }

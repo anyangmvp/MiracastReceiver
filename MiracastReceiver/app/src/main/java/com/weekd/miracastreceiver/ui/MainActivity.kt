@@ -32,6 +32,10 @@ import android.widget.TextView
  * 主 Activity - 等待投屏连接
  */
 class MainActivity : AppCompatActivity() {
+    override fun attachBaseContext(newBase: android.content.Context?) {
+        super.attachBaseContext(if (newBase != null) AppLanguage.wrap(newBase) else newBase)
+    }
+
 
     private lateinit var mdnsAdvertiser: MdnsAdvertiser
     private lateinit var deviceInfoProvider: DeviceInfoProvider
@@ -180,71 +184,96 @@ class MainActivity : AppCompatActivity() {
         switchReturnToApp = findViewById(R.id.switch_return_to_app)
         tvLanguageValue = findViewById(R.id.tv_language_value)
 
-        // 开机自启开关
+        // 卡片 1: 改名字
+        updateDeviceNameDisplay()
+        findViewById<View>(R.id.setting_device_name)?.setOnClickListener {
+            showChangeDeviceNameDialog()
+        }
+
+        // 卡片 2: 开机启动
+        val tvAutoStartLabel = findViewById<TextView>(R.id.tv_auto_start_label)
         switchAutoStart.isChecked = AppSettings.isAutoStartOnBoot(this)
-        switchAutoStart.setOnCheckedChangeListener { _, isChecked ->
-            AppSettings.setAutoStartOnBoot(this, isChecked)
-            Timber.i("Auto start on boot set to $isChecked")
+        tvAutoStartLabel?.text = getString(if (switchAutoStart.isChecked) R.string.state_enabled else R.string.state_disabled)
+        findViewById<View>(R.id.card_auto_start)?.setOnClickListener {
+            val newState = !switchAutoStart.isChecked
+            switchAutoStart.isChecked = newState
+            AppSettings.setAutoStartOnBoot(this, newState)
+            tvAutoStartLabel?.text = getString(if (newState) R.string.state_enabled else R.string.state_disabled)
+            Timber.i("Auto start on boot set to $newState")
+        }
+
+        // 卡片 3: 平滑播放
+        val switchSmooth = findViewById<SwitchCompat>(R.id.switch_smooth_image_transition)
+        val tvSmoothLabel = findViewById<TextView>(R.id.tv_smooth_label)
+        switchSmooth?.isChecked = AppSettings.isSmoothImageTransition(this)
+        tvSmoothLabel?.text = getString(if (switchSmooth?.isChecked == true) R.string.state_enabled else R.string.state_disabled)
+        findViewById<View>(R.id.card_smooth_transition)?.setOnClickListener {
+            val newState = !(switchSmooth?.isChecked ?: false)
+            switchSmooth?.isChecked = newState
+            AppSettings.setSmoothImageTransition(this, newState)
+            tvSmoothLabel?.text = getString(if (newState) R.string.state_enabled else R.string.state_disabled)
+            Timber.i("Smooth image transition set to $newState")
+        }
+
+        // 卡片 4: 自动旋转屏幕适配
+        val switchAutoRotate = findViewById<SwitchCompat>(R.id.switch_auto_rotate)
+        val tvAutoRotateLabel = findViewById<TextView>(R.id.tv_auto_rotate_label)
+        switchAutoRotate?.isChecked = AppSettings.isAutoRotateToFit(this)
+        tvAutoRotateLabel?.text = getString(if (switchAutoRotate?.isChecked == true) R.string.state_enabled else R.string.state_disabled)
+        findViewById<View>(R.id.card_auto_rotate)?.setOnClickListener {
+            val newState = !(switchAutoRotate?.isChecked ?: false)
+            switchAutoRotate?.isChecked = newState
+            AppSettings.setAutoRotateToFit(this, newState)
+            tvAutoRotateLabel?.text = getString(if (newState) R.string.state_enabled else R.string.state_disabled)
+            Timber.i("Auto rotate to fit set to $newState")
+        }
+
+        // 卡片 5: 语言切换 (点击直接在中英文之间来回切换)
+        val isEn = AppLanguage.isEnglish(this)
+        tvLanguageValue.text = if (isEn) "English" else "简体中文"
+        findViewById<View>(R.id.setting_language)?.setOnClickListener {
+            val newTag = if (isEn) AppLanguage.TAG_ZH else AppLanguage.TAG_EN
+            Timber.i("Toggling language to $newTag")
+            AppLanguage.apply(this, newTag)
+            recreate()
+        }
+
+        // 卡片 6: 退出应用
+        findViewById<View>(R.id.card_exit_app)?.setOnClickListener {
+            finish()
         }
 
         // 投屏结束后是否留在本应用
-        switchReturnToApp.isChecked = AppSettings.isReturnToAppAfterCast(this)
-        switchReturnToApp.setOnCheckedChangeListener { _, isChecked ->
+        switchReturnToApp?.isChecked = AppSettings.isReturnToAppAfterCast(this)
+        switchReturnToApp?.setOnCheckedChangeListener { _, isChecked ->
             AppSettings.setReturnToAppAfterCast(this, isChecked)
-            Timber.i("Return to app after cast set to $isChecked")
         }
-
-        // 界面语言
-        findViewById<View>(R.id.setting_language).setOnClickListener { showLanguageDialog() }
-        tvLanguageValue.text = currentLanguageLabel()
-
-        // 设置设备名称
-        val deviceName = deviceInfoProvider.getDeviceName()
-        tvDeviceName.text = deviceName
     }
 
     /** 第一项是「跟随系统」，其后是 [AppLanguage.OPTIONS]。 */
-    private fun languageLabels(): Array<String> =
-        arrayOf(getString(R.string.language_follow_system)) + AppLanguage.OPTIONS.map { it.second }
-
-    private fun currentLanguageIndex(): Int = AppLanguage.currentIndex() + 1
-
-    private fun currentLanguageLabel(): String = languageLabels()[currentLanguageIndex()]
-
-    private fun showLanguageDialog() {
-        val checked = currentLanguageIndex()
-        AlertDialog.Builder(this)
-            .setTitle(R.string.language)
-            .setSingleChoiceItems(languageLabels(), checked) { dialog, which ->
-                dialog.dismiss()
-                if (which == checked) return@setSingleChoiceItems
-                val tag = if (which == 0) "" else AppLanguage.OPTIONS[which - 1].first
-                Timber.i("Switching app language to '${tag.ifEmpty { "system" }}'")
-                // 会重建当前页面，新页面直接用新语言
-                AppLanguage.apply(this, tag)
-            }
-            .show()
-    }
-
     private fun checkNetworkAndStart() {
+        val ivTopWifi = findViewById<android.widget.ImageView>(R.id.iv_top_wifi)
+        val isWifi = NetworkUtils.isWifiConnected(this)
+        ivTopWifi?.visibility = if (isWifi) View.VISIBLE else View.GONE
+
         if (!NetworkUtils.isNetworkAvailable(this)) {
-            tvStatus.text = getString(R.string.status_no_network)
+            tvStatus.text = getString(R.string.status_no_network_four_char)
             Timber.w("Network not available")
             return
         }
 
-        if (!NetworkUtils.isWifiConnected(this)) {
-            tvStatus.text = getString(R.string.status_no_wifi)
+        if (!isWifi) {
+            tvStatus.text = getString(R.string.status_no_wifi_four_char)
             Timber.w("WiFi not connected")
         }
 
         // 获取 IP 地址
         val ipAddress = NetworkUtils.getLocalIpAddress(this)
         if (ipAddress != null) {
-            tvDeviceIp.text = getString(R.string.device_ip, ipAddress)
+            tvDeviceIp.text = ipAddress
             Timber.i("Local IP: $ipAddress")
         } else {
-            tvDeviceIp.text = getString(R.string.device_ip, getString(R.string.device_ip_fetching))
+            tvDeviceIp.text = "获取中..."
         }
 
         // 启动服务
@@ -285,9 +314,13 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             while (true) {
                 if (mdnsAdvertiser.isAdvertising()) {
-                    tvStatus.text = getString(R.string.waiting_connection)
+                    tvStatus.text = getString(R.string.status_ready_four_char)
                 } else {
-                    tvStatus.text = getString(R.string.status_service_starting)
+                    tvStatus.text = getString(R.string.status_starting_four_char)
+                }
+                val ip = NetworkUtils.getLocalIpAddress(this@MainActivity)
+                if (ip != null) {
+                    tvDeviceIp.text = ip
                 }
                 delay(2000)
             }
@@ -298,5 +331,98 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         mdnsAdvertiser.stopAdvertising()
         Timber.i("MainActivity destroyed")
+    }
+
+    private fun updateDeviceNameDisplay() {
+        val deviceName = deviceInfoProvider.getDeviceName()
+        tvDeviceName.text = deviceName
+        findViewById<TextView>(R.id.tv_setting_device_name_val)?.text = getString(R.string.card_current_name_prefix, deviceName)
+    }
+
+    
+    private fun showCustomDialog(view: View): AlertDialog {
+        val dialog = AlertDialog.Builder(this, R.style.Theme_Leanback_Dialog)
+            .setView(view)
+            .create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.show()
+        val widthPx = (520 * resources.displayMetrics.density).toInt()
+        dialog.window?.setLayout(widthPx, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
+        return dialog
+    }
+
+    private fun showChangeDeviceNameDialog() {
+        val currentName = deviceInfoProvider.getDeviceName()
+        val view = layoutInflater.inflate(R.layout.dialog_change_name, null)
+        val et = view.findViewById<android.widget.EditText>(R.id.et_device_name)
+        val btnRandom = view.findViewById<android.widget.Button>(R.id.btn_random_name)
+        val btnReset = view.findViewById<android.widget.Button>(R.id.btn_reset)
+        val btnCancel = view.findViewById<android.widget.Button>(R.id.btn_cancel)
+        val btnConfirm = view.findViewById<android.widget.Button>(R.id.btn_confirm)
+
+        val candidateNamesZh = listOf(
+            "客厅电视", "主卧电视", "次卧电视", "书房电视", 
+            "影音室大屏", "儿童房电视", "餐厅电视", "阳台娱乐屏", "家庭智慧屏"
+        )
+        val candidateNamesEn = listOf(
+            "Living Room TV", "Master Bedroom TV", "Guest Bedroom TV", "Study Room TV",
+            "Home Theater", "Kids Room TV", "Dining Room TV", "Family Smart Display"
+        )
+
+        et.setText(currentName)
+        et.setSelection(currentName.length)
+
+        btnRandom?.setOnClickListener {
+            val candidates = if (AppLanguage.isEnglish(this)) candidateNamesEn else candidateNamesZh
+            val randomChoice = candidates.filter { it != et.text.toString().trim() }.randomOrNull() ?: candidates.random()
+            et.setText(randomChoice)
+            et.setSelection(randomChoice.length)
+        }
+
+        val dialog = showCustomDialog(view)
+
+        btnReset.setOnClickListener {
+            getSharedPreferences("miracast_settings", android.content.Context.MODE_PRIVATE)
+                .edit()
+                .remove("custom_device_name")
+                .apply()
+            updateDeviceNameDisplay()
+            Toast.makeText(this, getString(R.string.toast_device_name_reset), Toast.LENGTH_SHORT).show()
+            restartServices()
+            dialog.dismiss()
+        }
+
+        btnCancel.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        btnConfirm.setOnClickListener {
+            val newName = et.text.toString().trim()
+            if (newName.isNotEmpty()) {
+                getSharedPreferences("miracast_settings", android.content.Context.MODE_PRIVATE)
+                    .edit()
+                    .putString("custom_device_name", newName)
+                    .apply()
+                updateDeviceNameDisplay()
+                Toast.makeText(this, getString(R.string.toast_device_name_changed, newName), Toast.LENGTH_SHORT).show()
+                restartServices()
+                dialog.dismiss()
+            }
+        }
+
+    }
+
+    private fun restartServices() {
+        try {
+            stopService(Intent(this, CastReceiverService::class.java))
+            mdnsAdvertiser.stopAdvertising()
+            lifecycleScope.launch {
+                kotlinx.coroutines.delay(500)
+                startCastService()
+                startAdvertising()
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Error restarting services")
+        }
     }
 }

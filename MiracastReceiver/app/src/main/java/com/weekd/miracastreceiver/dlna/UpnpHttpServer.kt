@@ -74,7 +74,7 @@ class UpnpHttpServer(
                 val output = client.getOutputStream()
 
                 val requestLine = reader.readLine() ?: return
-                val headers = mutableMapOf<String, String>()
+                val headers = java.util.TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER)
                 var contentLength = 0
 
                 var line: String?
@@ -148,7 +148,11 @@ class UpnpHttpServer(
     }
 
     private fun handleAvTransportControl(output: OutputStream, body: String, headers: Map<String, String>) {
-        val action = SoapParser.extractAction(headers["SOAPACTION"] ?: headers["SOAPAction"])
+        val rawAction = headers["SOAPACTION"] ?: headers["SOAPAction"] ?: headers["Soapaction"]
+        var action = SoapParser.extractAction(rawAction)
+        if (action.isBlank() && body.isNotBlank()) {
+            action = SoapParser.extractActionFromBody(body)
+        }
         Timber.i("AVTransport action: $action")
 
         // 调试：打印完整请求体，帮助排查 Emby 的格式
@@ -279,7 +283,11 @@ class UpnpHttpServer(
     }
 
     private fun handleRenderingControl(output: OutputStream, body: String, headers: Map<String, String>) {
-        val action = SoapParser.extractAction(headers["SOAPACTION"] ?: headers["SOAPAction"])
+        val rawAction = headers["SOAPACTION"] ?: headers["SOAPAction"] ?: headers["Soapaction"]
+        var action = SoapParser.extractAction(rawAction)
+        if (action.isBlank() && body.isNotBlank()) {
+            action = SoapParser.extractActionFromBody(body)
+        }
         Timber.i("RenderingControl action: $action")
 
         val response = when (action) {
@@ -309,7 +317,11 @@ class UpnpHttpServer(
     }
 
     private fun handleConnectionManager(output: OutputStream, body: String, headers: Map<String, String>) {
-        val action = SoapParser.extractAction(headers["SOAPACTION"] ?: headers["SOAPAction"])
+        val rawAction = headers["SOAPACTION"] ?: headers["SOAPAction"] ?: headers["Soapaction"]
+        var action = SoapParser.extractAction(rawAction)
+        if (action.isBlank() && body.isNotBlank()) {
+            action = SoapParser.extractActionFromBody(body)
+        }
         Timber.i("ConnectionManager action: $action")
 
         val response = when (action) {

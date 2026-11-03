@@ -19,6 +19,8 @@
         android:required="false" />
 
     <!-- 前台服务权限 -->
+    <uses-permission android:name="android.permission.CONFIGURE_WIFI_DISPLAY" />
+    <uses-permission android:name="android.permission.OVERRIDE_WIFI_CONFIG" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <!-- 开机自启时用 connectedDevice 类型，Android 15 起 BOOT_COMPLETED 不允许启动 mediaPlayback -->

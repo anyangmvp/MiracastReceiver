@@ -54,6 +54,13 @@ object AppSettings {
         prefs(context).edit().putBoolean(KEY_RETURN_TO_APP_AFTER_CAST, enabled).apply()
     }
 
+        fun isSmoothImageTransition(context: Context): Boolean =
+        prefs(context).getBoolean("smooth_image_transition", true)
+
+    fun setSmoothImageTransition(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean("smooth_image_transition", enabled).apply()
+    }
+
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 }

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 获得遥控器焦点态：高亮发光蓝边框 + 稍亮的半透明玻璃底色 -->
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#334D7AFF" />
+            <stroke
+                android:width="2.5dp"
+                android:color="#4D88FF" />
+            <corners android:radius="14dp" />
+        </shape>
+    </item>
+    <!-- 按下态 -->
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#445588FF" />
+            <stroke
+                android:width="2dp"
+                android:color="#6699FF" />
+            <corners android:radius="14dp" />
+        </shape>
+    </item>
+    <!-- 普通默认态：暗色磨砂玻璃卡片 -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#26162238" />
+            <stroke
+                android:width="1dp"
+                android:color="#1F406899" />
+            <corners android:radius="14dp" />
+        </shape>
+    </item>
+</selector>

@@ -110,13 +110,13 @@ class UpnpHttpServer(
                     Timber.d("UPnP $method $path")
 
                     when {
-                        path == "/device.xml" -> sendDeviceDescription(output)
-                        path == "/service/ConnectionManager.xml" -> sendConnectionManagerScpd(output)
-                        path == "/service/AVTransport.xml" -> sendAvTransportScpd(output)
-                        path == "/service/RenderingControl.xml" -> sendRenderingControlScpd(output)
-                        path == "/control/AVTransport" -> handleAvTransportControl(output, body, headers)
-                        path == "/control/RenderingControl" -> handleRenderingControl(output, body, headers)
-                        path == "/control/ConnectionManager" -> handleConnectionManager(output, body, headers)
+                        path == "/device.xml" || path == "/description.xml" || path == "/devicedesc.xml" || path == "/upnp/devicedesc.xml" || path.startsWith("/device.xml?") || path.startsWith("/description.xml?") -> sendDeviceDescription(output)
+                        path == "/service/ConnectionManager.xml" || path.startsWith("/service/ConnectionManager.xml?") -> sendConnectionManagerScpd(output)
+                        path == "/service/AVTransport.xml" || path.startsWith("/service/AVTransport.xml?") -> sendAvTransportScpd(output)
+                        path == "/service/RenderingControl.xml" || path.startsWith("/service/RenderingControl.xml?") -> sendRenderingControlScpd(output)
+                        path == "/control/AVTransport" || path.startsWith("/control/AVTransport?") -> handleAvTransportControl(output, body, headers)
+                        path == "/control/RenderingControl" || path.startsWith("/control/RenderingControl?") -> handleRenderingControl(output, body, headers)
+                        path == "/control/ConnectionManager" || path.startsWith("/control/ConnectionManager?") -> handleConnectionManager(output, body, headers)
                         path.startsWith("/event/") -> handleEvent(output)
                         else -> sendNotFound(output)
                     }
@@ -293,22 +293,22 @@ class UpnpHttpServer(
         val response = when (action) {
             "GetVolume" -> {
                 val state = renderer.getState()
-                buildSoapResponse(action, "<CurrentVolume>${state.volume}</CurrentVolume>")
+                buildSoapResponse(action, "<CurrentVolume>${state.volume}</CurrentVolume>", "urn:schemas-upnp-org:service:RenderingControl:1")
             }
             "SetVolume" -> {
                 val volume = SoapParser.extractTagValue(body, "DesiredVolume").toIntOrNull() ?: 50
                 renderer.setVolume(volume)
-                buildSoapResponse(action, "")
+                buildSoapResponse(action, "", "urn:schemas-upnp-org:service:RenderingControl:1")
             }
             "GetMute" -> {
                 val state = renderer.getState()
                 val mute = if (state.muted) "1" else "0"
-                buildSoapResponse(action, "<CurrentMute>$mute</CurrentMute>")
+                buildSoapResponse(action, "<CurrentMute>$mute</CurrentMute>", "urn:schemas-upnp-org:service:RenderingControl:1")
             }
             "SetMute" -> {
                 val mute = SoapParser.extractTagValue(body, "DesiredMute") == "1"
                 renderer.setMute(mute)
-                buildSoapResponse(action, "")
+                buildSoapResponse(action, "", "urn:schemas-upnp-org:service:RenderingControl:1")
             }
             else -> buildSoapFault("401", "Invalid Action")
         }
@@ -328,12 +328,12 @@ class UpnpHttpServer(
             "GetProtocolInfo" -> {
                 val content = """
                     <Source></Source>
-                    <Sink>http-get:*:video/*:*,http-get:*:audio/*:*,http-get:*:image/*:*</Sink>
+                    <Sink>http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_SM;DLNA.ORG_OP=01;DLNA.ORG_FLAGS=00f00000000000000000000000000000,http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_MED,http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_LRG,http-get:*:image/jpeg:*,http-get:*:image/png:*,http-get:*:image/webp:*,http-get:*:image/bmp:*,http-get:*:image/gif:*,http-get:*:video/mp4:*,http-get:*:video/x-matroska:*,http-get:*:video/mpeg:*,http-get:*:video/*:*,http-get:*:audio/mp3:*,http-get:*:audio/mpeg:*,http-get:*:audio/mp4:*,http-get:*:audio/*:*,http-get:*:*:*</Sink>
                 """.trimIndent()
-                buildSoapResponse(action, content)
+                buildSoapResponse(action, content, "urn:schemas-upnp-org:service:ConnectionManager:1")
             }
             "GetCurrentConnectionIDs" -> {
-                buildSoapResponse(action, "<ConnectionIDs>0</ConnectionIDs>")
+                buildSoapResponse(action, "<ConnectionIDs>0</ConnectionIDs>", "urn:schemas-upnp-org:service:ConnectionManager:1")
             }
             "GetCurrentConnectionInfo" -> {
                 val content = """
@@ -345,7 +345,7 @@ class UpnpHttpServer(
                     <Direction>Input</Direction>
                     <Status>OK</Status>
                 """.trimIndent()
-                buildSoapResponse(action, content)
+                buildSoapResponse(action, content, "urn:schemas-upnp-org:service:ConnectionManager:1")
             }
             else -> buildSoapFault("401", "Invalid Action")
         }
@@ -360,11 +360,15 @@ class UpnpHttpServer(
         output.flush()
     }
 
-    private fun buildSoapResponse(action: String, content: String): String {
+    private fun buildSoapResponse(
+        action: String,
+        content: String,
+        serviceNamespace: String = "urn:schemas-upnp-org:service:AVTransport:1"
+    ): String {
         return """<?xml version="1.0" encoding="utf-8"?>
 <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
   <s:Body>
-    <u:${action}Response xmlns:u="urn:schemas-upnp-org:service:AVTransport:1">
+    <u:${action}Response xmlns:u="$serviceNamespace">
       $content
     </u:${action}Response>
   </s:Body>

@@ -91,11 +91,25 @@ class SsdpServer(
         Timber.d("SSDP search from ${address.hostAddress}:$port")
 
         // 检查搜索目标
-        val searchTarget = extractSearchTarget(message)
+        val searchTarget = extractSearchTarget(message) ?: return
+
+        if (searchTarget == "ssdp:all") {
+            // UPnP 1.0 section 1.2.3: Must NOT respond with ssdp:all, but with each individual target
+            val allTargets = listOf(
+                "upnp:rootdevice",
+                "uuid:$deviceUuid",
+                DEVICE_TYPE,
+                SERVICE_TYPE_AV,
+                SERVICE_TYPE_RC,
+                SERVICE_TYPE_CM
+            )
+            for (target in allTargets) {
+                sendSearchResponse(address, port, target)
+            }
+            return
+        }
 
         val shouldRespond = when {
-            searchTarget == null -> false
-            searchTarget == "ssdp:all" -> true
             searchTarget == "upnp:rootdevice" -> true
             searchTarget.contains("MediaRenderer") -> true
             searchTarget.contains("AVTransport") -> true
@@ -106,7 +120,7 @@ class SsdpServer(
         }
 
         if (shouldRespond) {
-            sendSearchResponse(address, port, searchTarget ?: "upnp:rootdevice")
+            sendSearchResponse(address, port, searchTarget)
         }
     }
 
@@ -123,23 +137,23 @@ class SsdpServer(
     private fun sendSearchResponse(address: InetAddress, port: Int, searchTarget: String) {
         val location = "http://$localIp:$httpPort/device.xml"
 
+        val usn = when {
+            searchTarget == "upnp:rootdevice" -> "uuid:$deviceUuid::upnp:rootdevice"
+            searchTarget == "uuid:$deviceUuid" -> "uuid:$deviceUuid"
+            searchTarget.contains("device:") -> "uuid:$deviceUuid::$searchTarget"
+            searchTarget.contains("service:") -> "uuid:$deviceUuid::$searchTarget"
+            else -> "uuid:$deviceUuid::$searchTarget"
+        }
+
         val response = buildString {
             append("HTTP/1.1 200 OK\r\n")
             append("CACHE-CONTROL: max-age=1800\r\n")
             append("EXT:\r\n")
             append("LOCATION: $location\r\n")
-            append("SERVER: Android/11 UPnP/1.0 MiracastReceiver/1.0\r\n")
+            append("SERVER: Linux/3.x UPnP/1.0 DLNADOC/1.50 MiracastReceiver/1.0\r\n")
             append("ST: $searchTarget\r\n")
-            append("USN: uuid:$deviceUuid")
-
-            // 根据 ST 添加不同的 USN
-            when {
-                searchTarget == "upnp:rootdevice" -> append("::upnp:rootdevice")
-                searchTarget.contains("device:") -> append("::$searchTarget")
-                searchTarget.contains("service:") -> append("::$searchTarget")
-            }
-
-            append("\r\n\r\n")
+            append("USN: $usn\r\n")
+            append("\r\n")
         }
 
         try {
@@ -148,7 +162,7 @@ class SsdpServer(
             val packet = DatagramPacket(data, data.size, address, port)
             socket.send(packet)
             socket.close()
-            Timber.d("Sent SSDP response to ${address.hostAddress}:$port")
+            Timber.d("Sent SSDP response ($searchTarget) to ${address.hostAddress}:$port")
         } catch (e: Exception) {
             Timber.e(e, "Error sending SSDP response")
         }
@@ -157,12 +171,15 @@ class SsdpServer(
     private fun startPeriodicNotify() {
         scope.launch {
             try {
-                kotlinx.coroutines.delay(2000) // 启动后等待2秒
-                sendNotify()
+                // 启动后快速发送3次 NOTIFY (0s, 1s, 2s) 防止单次丢包
+                repeat(3) {
+                    sendNotify()
+                    kotlinx.coroutines.delay(1000)
+                }
 
-                // 每30分钟发送一次 NOTIFY
+                // 每60秒定期广播维持多播表保活
                 while (true) {
-                    kotlinx.coroutines.delay(30 * 60 * 1000)
+                    kotlinx.coroutines.delay(60 * 1000)
                     sendNotify()
                 }
             } catch (e: Exception) {

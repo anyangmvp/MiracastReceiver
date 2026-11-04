@@ -133,7 +133,7 @@
         android:layout_gravity="center"
         android:indeterminate="true"
         android:indeterminateTint="@color/accent"
-        android:visibility="visible" />
+        android:visibility="gone" />
 
     <!-- 错误提示 -->
     <TextView

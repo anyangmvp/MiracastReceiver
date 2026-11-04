@@ -214,6 +214,11 @@ class MainActivity : AppCompatActivity() {
             tvSmoothLabel?.text = getString(if (newState) R.string.state_enabled else R.string.state_disabled)
             Timber.i("Smooth image transition set to $newState")
         }
+        switchSmooth?.setOnCheckedChangeListener { _, isChecked ->
+            AppSettings.setSmoothImageTransition(this, isChecked)
+            tvSmoothLabel?.text = getString(if (isChecked) R.string.state_enabled else R.string.state_disabled)
+            Timber.i("Smooth image transition switched to $isChecked")
+        }
 
         // 卡片 4: 自动旋转屏幕适配
         val switchAutoRotate = findViewById<SwitchCompat>(R.id.switch_auto_rotate)

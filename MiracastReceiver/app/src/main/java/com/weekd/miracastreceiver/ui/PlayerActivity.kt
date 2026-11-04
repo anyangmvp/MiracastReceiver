@@ -146,6 +146,8 @@ class PlayerActivity : AppCompatActivity() {
     private var playlistTitles: List<String> = emptyList()
     private var currentIndex: Int = 0
     private var slideJob: Job? = null
+    private var imageStopExitJob: Job? = null
+    private var imageLoadJob: Job? = null
     private var progressUpdateJob: Job? = null
     private var qualityHeight: Int = QUALITY_AUTO
     private var isMiracastSession = false
@@ -218,6 +220,17 @@ class PlayerActivity : AppCompatActivity() {
                     val src = intent?.getStringExtra("source")
                     if (src == "miracast" && !isMiracastSession) {
                         Timber.d("Ignoring miracast ACTION_STOP in non-miracast session")
+                    } else if (isCurrentImage()) {
+                        Timber.d("Received ACTION_STOP in image session, delaying exit for smooth transition")
+                        imageStopExitJob?.cancel()
+                        imageStopExitJob = lifecycleScope.launch {
+                            delay(2000)
+                            if (isActive) {
+                                Timber.i("Image stop timeout reached, exiting player")
+                                stopPlayback()
+                                exitPlayer()
+                            }
+                        }
                     } else {
                         stopPlayback()
                         exitPlayer()
@@ -251,6 +264,7 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        overridePendingTransition(0, 0)
         super.onCreate(savedInstanceState)
         autoRotateToFit = com.weekd.miracastreceiver.util.AppSettings.isAutoRotateToFit(this)
         setContentView(R.layout.activity_player)
@@ -265,6 +279,7 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        overridePendingTransition(0, 0)
         setIntent(intent)
         handleIntent(intent)
     }
@@ -590,6 +605,8 @@ class PlayerActivity : AppCompatActivity() {
         castToken = nextCastToken
         castIdleReason = null
         castStoppedBySender = false
+        imageStopExitJob?.cancel()
+        imageStopExitJob = null
         isExplicitImageMedia = intent?.getBooleanExtra(EXTRA_IS_IMAGE, false) ?: false
         // 每次新的投屏请求都从 0° 开始
         rotationDegrees = 0
@@ -874,29 +891,35 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun showImage(uri: String) {
         Timber.i("Showing image: $uri")
+        imageStopExitJob?.cancel()
+        imageStopExitJob = null
         isMiracastSession = false
         isAirPlayMirrorSession = false
         screenOnSessionActive = true
         player?.pause()
         updateScreenOn()
         tvError.visibility = View.GONE
-        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         showRotateButton(focus = false)
 
         val isSmooth = com.weekd.miracastreceiver.util.AppSettings.isSmoothImageTransition(this)
         val hasCurrentImage = imageView.visibility == View.VISIBLE && imageView.drawable != null
 
-        // 仅在首次没有图片且非平滑模式时才立即显示转圈 loading
-        if (!isSmooth || !hasCurrentImage) {
+        // 仅在非平滑模式且没有正在显示的图片时，才显示转圈 loading
+        if (!isSmooth && !hasCurrentImage) {
             playerView.visibility = View.GONE
             mirrorSurfaceView.visibility = View.GONE
             imageView.visibility = View.VISIBLE
             tvStatus.text = getString(R.string.status_showing_image)
             updateBufferingState(true)
             applyRotation()
+        } else {
+            // 平滑模式或已有图片：确保 loading 不显示，旧图片保持静止
+            updateBufferingState(false)
         }
 
-        lifecycleScope.launch {
+        imageLoadJob?.cancel()
+        imageLoadJob = lifecycleScope.launch {
             try {
                 val bitmap = withContext(Dispatchers.IO) {
                     val bytes = if (uri.startsWith("http://") || uri.startsWith("https://")) {
@@ -913,19 +936,21 @@ class PlayerActivity : AppCompatActivity() {
                         null
                     }
                 }
+                if (!isActive) return@launch
                 updateBufferingState(false)
                 if (bitmap != null) {
                     playerView.visibility = View.GONE
                     mirrorSurfaceView.visibility = View.GONE
                     imageView.visibility = View.VISIBLE
                     imageView.setImageBitmap(bitmap)
-                    adaptOrientationToImage(bitmap.width, bitmap.height)
+                    resetImageRotation()
                     imageView.post { applyRotation() }
                     startImageSlideShow()
                 } else {
                     throw IllegalArgumentException(getString(R.string.error_image_decode))
                 }
             } catch (e: Exception) {
+                if (!isActive) return@launch
                 screenOnSessionActive = false
                 updateScreenOn()
                 Timber.e(e, "Error showing image")
@@ -968,22 +993,38 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
-    private fun isCurrentImage(): Boolean = mediaUri?.let { isImageUri(it) } == true
+    private fun isCurrentImage(): Boolean =
+        isExplicitImageMedia ||
+        mediaUri?.let { isImageUri(it) } == true ||
+        (imageView.visibility == View.VISIBLE && imageView.drawable != null && !isMirrorSession())
 
     private fun isImageUri(uri: String): Boolean {
         if (isExplicitImageMedia) return true
         val clean = uri.substringBefore('?').lowercase()
         val full = uri.lowercase()
+        if (clean.endsWith(".mp4") || clean.endsWith(".mkv") || clean.endsWith(".avi") ||
+            clean.endsWith(".mov") || clean.endsWith(".m3u8") || clean.endsWith(".flv") ||
+            clean.endsWith(".ts") || clean.endsWith(".webm") || clean.endsWith(".mp3") ||
+            clean.endsWith(".aac") || clean.endsWith(".flac")) {
+            return false
+        }
         return clean.endsWith(".jpg") || clean.endsWith(".jpeg") || clean.endsWith(".png") ||
             clean.endsWith(".gif") || clean.endsWith(".webp") || clean.endsWith(".bmp") ||
             clean.endsWith(".heic") || clean.endsWith(".heif") ||
             full.contains("/image") || full.contains("/photo") || full.contains("type=image") ||
             full.contains("m=image") || full.contains("mediatype=image") || full.contains("/dms/image") ||
-            full.contains("gallery") ||
-            clean.startsWith("content://") && clean.contains("image")
+            full.contains("gallery") || full.contains("pic") ||
+            (clean.startsWith("content://") && clean.contains("image")) ||
+            (imageView.visibility == View.VISIBLE && imageView.drawable != null)
     }
 
     private fun updateBufferingState(isBuffering: Boolean) {
+        val isSmooth = com.weekd.miracastreceiver.util.AppSettings.isSmoothImageTransition(this)
+        if (isSmooth && isCurrentImage()) {
+            progressBar.visibility = View.GONE
+            bufferingIndicator.visibility = View.GONE
+            return
+        }
         progressBar.visibility = if (isBuffering) View.VISIBLE else View.GONE
         bufferingIndicator.visibility = if (isBuffering) View.VISIBLE else View.GONE
     }
@@ -1164,11 +1205,7 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun adaptOrientationToImage(width: Int, height: Int) {
-        requestedOrientation = if (width >= height) {
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-        }
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
     }
 
     /**
@@ -1487,6 +1524,10 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun stopPlayback(endCastSession: Boolean = false) {
+        imageStopExitJob?.cancel()
+        imageStopExitJob = null
+        imageLoadJob?.cancel()
+        imageLoadJob = null
         screenOnSessionActive = false
         stopImageSlideShow()
         stopProgressUpdates()

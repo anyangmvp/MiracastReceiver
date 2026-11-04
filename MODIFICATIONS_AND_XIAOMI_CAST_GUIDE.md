@@ -128,12 +128,15 @@
      }
      ```
 
-### 3.2 图片平滑播放 (Smooth Image Transition) 体验优化
-- **故障现象**：开启平滑切换后，切图时先闪一下转圈 loading 然后黑屏退出。
-- **修复方案**：
-  1. 引入双缓冲逻辑：当开启平滑模式且当前屏幕已有图片展示时，**绝不重置或隐藏现有的 ImageView**，保持上一张图片静止显示。
-  2. 协程在后台异步下载解码新图片。
-  3. 新图片成功构建出 `Bitmap` 之后，直接瞬时替换 `imageView.setImageBitmap(bitmap)`，实现类似 PPT 幻灯片般的平滑切图，完全消除了中间令人不适的黑屏与转圈闪烁。
+### 3.2 图片平滑播放 (Smooth Image Transition) 体验彻底优化
+- **故障根因深度剖析**：
+  1. **手机端切图先发 Stop 导致 Activity 被强退重建**：小米相册与大多数 DLNA 控制器在手机端滑动切换下一张图片时，协议层首先发出 `AVTransport:Stop`，紧随其后（约 100~300ms 后）再发出 `SetAVTransportURI` 和 `Play`。原版代码一收到 `ACTION_STOP` 就无条件执行 `exitPlayer()` 销毁 Activity。导致每次切图屏幕都先退出回主界面，随后再拉起一个全新的 `PlayerActivity`，从而必然出现黑屏和转圈 loading。
+  2. **布局默认 ProgressBar 可见性残留**：`activity_player.xml` 中的中心加载圆环 `progress_bar` 原生属性为 `android:visibility="visible"`，只要进入页面必然先闪现 loading 转圈。
+  3. **电视屏幕方向切换黑屏**：原版 `adaptOrientationToImage` 会在竖屏照片时将 Activity 的 `requestedOrientation` 强切为 `PORTRAIT`，电视硬件屏幕为固定 16:9 横屏，强制切换导致电视系统 WindowManager 冻结窗口并黑屏闪烁。
+- **彻底根治方案**：
+  1. **图片会话 Stop 延迟平滑宽限机制**：在 `PlayerActivity` 中，若当前处于图片投屏会话，收到 `ACTION_STOP` 时**绝不立刻销毁 Activity**，而是启动 2 秒静默宽限协程（`imageStopExitJob`），保持上一张照片在电视屏幕上完全静止。当下一张照片指令在几百毫秒内到达时，瞬间取消退出协程，Activity 持续保持常驻，零销毁、零重建！若用户确实在手机上停止了投屏，2 秒超时后平稳退回主界面。
+  2. **真正静默双缓冲与加载圈彻底隐藏**：在平滑播放模式开启时，全流程强行隐藏 `progress_bar` 与 `bufferingIndicator`；后台异步协程下载解码新图，解码完成后瞬间替换 `imageView.setImageBitmap(bitmap)`。
+  3. **锁定电视大屏横屏渲染与消除窗口动画**：电视端统一保持横屏显示，竖屏照片由 `ImageView` 的 `fitCenter` 或内容旋转处理，绝不改变系统方向；并在 `Theme.Leanback.Fullscreen` 中配置 `windowAnimationStyle=@null`，彻底杜绝转场闪烁。
 
 ---
 

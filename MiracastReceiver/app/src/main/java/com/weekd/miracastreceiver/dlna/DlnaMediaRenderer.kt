@@ -61,6 +61,8 @@ class DlnaMediaRenderer {
             metadata.contains("image/gif", ignoreCase = true) ||
             metadata.contains("image/bmp", ignoreCase = true) ||
             metadata.contains(":image:", ignoreCase = true) ||
+            metadata.contains("photo", ignoreCase = true) ||
+            metadata.contains("picture", ignoreCase = true) ||
             metadata.contains("object.item.imageItem", ignoreCase = true)) {
             return true
         }
